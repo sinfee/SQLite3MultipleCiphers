@@ -24,31 +24,33 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>sqlite3mc_dll</RootNamespace>
     <ProjectName>sqlite3mc_dll</ProjectName>
+    <WindowsTargetPlatformVersion>
+    </WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -72,30 +74,30 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(ProjectDir)..\bin\vc14\dll\debug\</OutDir>
+    <OutDir>$(ProjectDir)..\bin\vc14\dll\debug$(PlatformTarget)\</OutDir>
     <IntDir>$(ProjectDir)obj\vc14\Win32\Debug\sqlite3mc_dll\</IntDir>
-    <TargetName>sqlite3mc</TargetName>
+    <TargetName>tmcsql_d</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(ProjectDir)..\bin\vc14\dll\debug\</OutDir>
+    <OutDir>$(ProjectDir)..\bin\vc14\dll\debug$(PlatformTarget)\</OutDir>
     <IntDir>$(ProjectDir)obj\vc14\x64\Debug\sqlite3mc_dll\</IntDir>
-    <TargetName>sqlite3mc_x64</TargetName>
+    <TargetName>tmcsql_d</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ProjectDir)..\bin\vc14\dll\release\</OutDir>
+    <OutDir>$(ProjectDir)..\bin\vc14\dll\release$(PlatformTarget)\</OutDir>
     <IntDir>$(ProjectDir)obj\vc14\Win32\Release\sqlite3mc_dll\</IntDir>
-    <TargetName>sqlite3mc</TargetName>
+    <TargetName>tmcsql</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ProjectDir)..\bin\vc14\dll\release\</OutDir>
+    <OutDir>$(ProjectDir)..\bin\vc14\dll\release$(PlatformTarget)\</OutDir>
     <IntDir>$(ProjectDir)obj\vc14\x64\Release\sqlite3mc_dll\</IntDir>
-    <TargetName>sqlite3mc_x64</TargetName>
+    <TargetName>tmcsql</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -115,7 +117,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ImportLibrary>..\bin\vc14\dll\debug\sqlite3mc.lib</ImportLibrary>
+      <ImportLibrary>..\bin\vc14\dll\debug$(PlatformTarget)\sqlite3_d.lib</ImportLibrary>
     </Link>
     <ProjectReference>
     </ProjectReference>
@@ -137,7 +139,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ImportLibrary>..\bin\vc14\dll\debug\sqlite3mc_x64.lib</ImportLibrary>
+      <ImportLibrary>..\bin\vc14\dll\debug$(PlatformTarget)\sqlite3_d.lib</ImportLibrary>
     </Link>
     <ProjectReference>
     </ProjectReference>
@@ -163,7 +165,7 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <ImportLibrary>..\bin\vc14\dll\release\sqlite3mc.lib</ImportLibrary>
+      <ImportLibrary>..\bin\vc14\dll\release$(PlatformTarget)\sqlite3.lib</ImportLibrary>
     </Link>
     <ProjectReference>
     </ProjectReference>
@@ -189,7 +191,7 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <ImportLibrary>..\bin\vc14\dll\release\sqlite3mc_x64.lib</ImportLibrary>
+      <ImportLibrary>..\bin\vc14\dll\release$(PlatformTarget)\sqlite3.lib</ImportLibrary>
     </Link>
     <ProjectReference>
     </ProjectReference>
@@ -217,6 +219,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\sqlite3mc.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".github\copilot-instructions.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
