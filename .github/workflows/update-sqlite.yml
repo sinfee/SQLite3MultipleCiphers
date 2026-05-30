@@ -1,0 +1,352 @@
+name: Update SQLite (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      sqlite_version:
+        description: "SQLite version (e.g. 3.53.1)"
+        required: true
+      mode:
+        description: "Release mode"
+        required: true
+        type: choice
+        default: dry-run
+        options:
+          - sanity
+          - dry-run
+          - release
+
+permissions:
+  contents: write
+
+env:
+  CONFIG_FILE:  config.json
+  SQLITE_PATH:  sqlite3
+  ARCHIVES:     archives
+
+jobs:
+
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      MODE: ${{ github.event.inputs.mode }}
+
+    steps:
+
+      # -------------------------------------------------
+      # Checkout repository
+      # -------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # -------------------------------------------------
+      # Setup Python
+      # -------------------------------------------------
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # -------------------------------------------------
+      # Update SQLite version number in configuration
+      # -------------------------------------------------
+      - name: Update config
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python scripts/update_config.py "${{ inputs.sqlite_version }}"
+
+      # -------------------------------------------------
+      # Create environment variables
+      # -------------------------------------------------
+      - name: Build context
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python scripts/build_context.py
+
+      # -------------------------------------------------
+      # Display environment variables
+      # -------------------------------------------------
+      - name: Show environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SQLite Version:      $SQLITE_VERSION"
+          echo "SQLite Version Raw:  $SQLITE_VERSION_RAW"
+          echo "SQLite URL Official: $SQLITE_URL_OFFICIAL"
+          echo "SQLite URL GitHub:   $SQLITE_URL_GITHUB"
+
+      # -------------------------------------------------
+      # Create directories for intermediate files
+      # -------------------------------------------------
+      - name: Create directories
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$SQLITE_PATH"
+          mkdir -p "$ARCHIVES"
+
+      # -------------------------------------------------
+      # Download amalgamation of requested SQLite version
+      # -------------------------------------------------
+      - name: Download SQLite sources
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Downloading from: $SQLITE_URL_OFFICIAL"
+          URL="${SQLITE_URL_OFFICIAL}sqlite-amalgamation-${SQLITE_VERSION_RAW}.zip"
+          echo "File: $URL"
+          curl -L "$URL" -o sqlite.zip
+
+          echo "Extracting..."
+          unzip -q sqlite.zip -d "$SQLITE_PATH"
+
+          rm sqlite.zip
+
+          echo "Done. Contents of $SQLITE_PATH:"
+          ls -la "$SQLITE_PATH"
+
+      # -------------------------------------------------
+      # Generate patched SQLite source files
+      # -------------------------------------------------
+      - name: Patch SQLite3 amalgamation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sqlite3_h="${{ env.SQLITE_PATH }}/sqlite-amalgamation-${{ env.SQLITE_VERSION_RAW }}/sqlite3.h"
+          sqlite3ext_h="${{ env.SQLITE_PATH }}/sqlite-amalgamation-${{ env.SQLITE_VERSION_RAW }}/sqlite3ext.h"
+
+          sqlite_src="${{ env.SQLITE_PATH }}/sqlite-amalgamation-${{ env.SQLITE_VERSION_RAW }}/sqlite3.c"
+          shell_src="${{ env.SQLITE_PATH }}/sqlite-amalgamation-${{ env.SQLITE_VERSION_RAW }}/shell.c"
+          dest_sqlite="${{ env.SQLITE_PATH }}/sqlite3patched.c"
+          dest_shell="${{ env.SQLITE_PATH }}/shell.c"
+          dest_rekey="${{ env.SQLITE_PATH }}/rekeyvacuum.c"
+
+          # Make sure that scripts are executable
+          chmod +x scripts/patchsqlite3.sh
+          chmod +x scripts/patchshell.sh
+          chmod +x scripts/rekeyvacuum.sh
+          ls -l scripts/
+
+          bash scripts/patchsqlite3.sh $sqlite_src > $dest_sqlite
+          bash scripts/patchshell.sh $shell_src > $dest_shell
+          bash scripts/rekeyvacuum.sh $sqlite_src > $dest_rekey
+
+          cp "$sqlite_src" "$SQLITE_PATH/"
+          cp "$shell_src" "$SQLITE_PATH/shell-orig.c"
+          cp "$sqlite3_h" "$SQLITE_PATH/"
+          cp "$sqlite3ext_h" "$SQLITE_PATH/"
+          ls -l "${{ env.SQLITE_PATH }}"
+
+      # -------------------------------------------------
+      # Compare generated patched source files with previous version
+      # -------------------------------------------------
+      # Usually they will differ when updating to a new version.
+      # However, after a successful update, repeating the update process
+      # for the same version should result in identical files.
+      # -------------------------------------------------
+      - name: Comparing patched SQLite files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          FILES=(
+            "sqlite3patched.c"
+            "rekeyvacuum.c"
+            "shell.c"
+          )
+
+          echo "=== Patch comparison report ==="
+
+          CHANGED=0
+
+          for f in "${FILES[@]}"; do
+            echo ""
+            echo "Checking: $f"
+
+            if cmp -s "src/$f" "$SQLITE_PATH/$f"; then
+              echo "OK: identical"
+            else
+              echo "DIFF: changed"
+              CHANGED=1
+
+              echo "--- diff ($f) ---"
+              diff -u "src/$f" "$SQLITE_PATH/$f" || true
+            fi
+          done
+
+          echo ""
+          echo "=== Summary ==="
+
+          if [ "$CHANGED" -eq 0 ]; then
+            echo "All files identical"
+          else
+            echo "Some files differ (see above)"
+          fi
+
+          exit 0
+
+      # -------------------------------------------------
+      # Compare generated patched source files with originals
+      # -------------------------------------------------
+      # If the number of deviations doesn't correspond to the
+      # number of applied patch hunks, it will be required to
+      # inspect the files carefully, and to adjust the patches
+      # if necessary.
+      # -------------------------------------------------
+      - name: Per-file patch impact analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          COMPARE_PAIRS=(
+            "sqlite3.c:sqlite3patched.c"
+            "shell-orig.c:shell.c"
+            "../src/rekeyvacuum.c:rekeyvacuum.c"
+          )
+
+          for pair in "${COMPARE_PAIRS[@]}"; do
+            SRC="${pair%%:*}"
+            DST="${pair##*:}"
+
+            ORIGINAL="$SQLITE_PATH/$SRC"
+            PATCHED="$SQLITE_PATH/$DST"
+
+            echo ""
+            echo "Comparing:"
+            echo "  original: $SRC"
+            echo "  patched : $DST"
+
+            DIFF_BLOCKS=$(diff -u "$ORIGINAL" "$PATCHED" \
+              | grep -c '^@@' || true)
+
+            echo "Patch blocks: $DIFF_BLOCKS"
+          done
+
+      # -------------------------------------------------
+      # Create ZIP archive(s) for the updated and patched SQLite source files
+      # -------------------------------------------------
+      - name: Create ZIP archive for updated SQLite sources
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DESTPATH="$ARCHIVES"
+
+          (
+            SOURCEPATH="$SQLITE_PATH"
+            cd "$SOURCEPATH"
+            find . -maxdepth 1 -type f -print \
+              | zip "../$DESTPATH/sqlite3source.zip" -@
+          )
+
+          ls -l "$DESTPATH"
+
+      # -------------------------------------------------
+      # Upload ZIP archive
+      # -------------------------------------------------
+      - name: Upload ZIP archives
+        uses: actions/upload-artifact@v7
+        with:
+          name: sqlite-sources
+          path: |
+            ${{ env.ARCHIVES }}/sqlite3source.zip
+
+      # -------------------------------------------------
+      # Replace original and patched SQLite sources
+      # -------------------------------------------------
+      - name: Copy original and patched files into src
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Copying files into src/ ..."
+          for f in sqlite3.c sqlite3.h sqlite3ext.h sqlite3patched.c rekeyvacuum.c shell.c; do
+            echo "Copying $f"
+            cp -f "$SQLITE_PATH/$f" src/
+          done
+
+          echo "Done. Checking for changes..."
+
+          git status --porcelain
+
+      # -------------------------------------------------
+      # GIT + GPG SETUP (only non-sanity)
+      # -------------------------------------------------
+      - name: Configure Git
+        if: ${{ inputs.mode != 'sanity' }}
+        run: |
+          git config user.name "${{ vars.GIT_USER_NAME }}"
+          git config user.email "${{ vars.GIT_USER_EMAIL }}"
+          git config user.signingkey "${{ vars.GPG_KEY_ID }}"
+          git config commit.gpgsign true
+
+      # -------------------------------------------------
+      # Import GPG key (only non-sanity)
+      # -------------------------------------------------
+      - name: Import GPG key
+        if: ${{ inputs.mode != 'sanity' }}
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+
+      # -------------------------------------------------
+      # DRY RUN VALIDATION
+      # -------------------------------------------------
+      - name: Dry-run signing validation
+        if: ${{ inputs.mode == 'dry-run' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Testing GPG setup..."
+          gpg --list-secret-keys --keyid-format=long
+
+          echo "Testing commit signing..."
+          git commit --allow-empty -S -m "dry-run signing test"
+
+          echo "Verifying signature..."
+          git log -1 --show-signature
+          
+          echo "Commit email:"
+          git log -1 --format='%ae'
+
+          echo "Commit signature:"
+          git log -1 --show-signature
+
+          echo "Verify commit:"
+          git verify-commit HEAD
+
+      # -------------------------------------------------
+      # Commit changed source files and configuration (only release)
+      # -------------------------------------------------
+      - name: Commit config and source changes
+        if: ${{ inputs.mode == 'release' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git add config.json
+
+          git add src/sqlite3.c
+          git add src/sqlite3.h
+          git add src/sqlite3ext.h
+
+          git add src/sqlite3patched.c
+          git add src/shell.c
+          git add src/rekeyvacuum.c
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Update SQLite version to ${{ inputs.sqlite_version }}"
+          git push
