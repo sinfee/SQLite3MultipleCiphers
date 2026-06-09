@@ -121,6 +121,10 @@
     </Link>
     <ProjectReference>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>$(ThkApiV8)\bin\ThkVerRel.exe "$(TargetPath)" $(PlatformTarget) $(Configuration) $(ProjectDir) 11 ThkSmcSql</Command>
+      <Message>修正目标生成项的信息...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -143,6 +147,10 @@
     </Link>
     <ProjectReference>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>$(ThkApiV8)\bin\ThkVerRel.exe "$(TargetPath)" $(PlatformTarget) $(Configuration) $(ProjectDir) 11 ThkSmcSql</Command>
+      <Message>修正目标生成项的信息...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -169,6 +177,10 @@
     </Link>
     <ProjectReference>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>$(ThkApiV8)\bin\ThkVerRel.exe "$(TargetPath)" $(PlatformTarget) $(Configuration) $(ProjectDir) 11 ThkSmcSql</Command>
+      <Message>修正目标生成项的信息...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -195,6 +207,10 @@
     </Link>
     <ProjectReference>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>$(ThkApiV8)\bin\ThkVerRel.exe "$(TargetPath)" $(PlatformTarget) $(Configuration) $(ProjectDir) 11 ThkSmcSql</Command>
+      <Message>修正目标生成项的信息...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\cipher_common.h" />
