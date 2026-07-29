@@ -10,8 +10,13 @@ The code was mainly developed under Windows, but was tested under Linux as well.
 
 ## Version information
 
-* 2.3.5 - *June 2026*
-  - Based on SQLite version 3.53.2
+* 2.4.0 - *July 2026*
+  - Based on SQLite version 3.53.4
+  - Regenerated build files (with some additional options enabled)
+  - Modified rekey operation to support rekeying in WAL mode  
+    Up to now the rekey operation generated a new key salt, but in WAL mode that would have led to corrupted databases, and was therefore not supported. Rekeying in WAL mode is now supported at the price of keeping the previous key salt. However, this is usually only a minor security degradation.
+  - Added extension for value-level encryption (VLE)  
+    SQL functions `sqlite3mc_vle_key`, `sqlite3mc_vle_encrypt`, and `sqlite3mc_vle_decrypt`were implemented to allow to set up an encryption key for encrypting resp decrypting individual column values.
 
 For further version information please consult the [CHANGELOG](CHANGELOG.md).
 
@@ -29,7 +34,13 @@ Documentation of the currently supported cipher schemes and the C and SQL interf
 
 Documentation on how to build the extension can be found on the page [SQLite3 Multiple Ciphers Installation](https://utelle.github.io/SQLite3MultipleCiphers/docs/installation/install_overview/).
 
-## Supporters
+## Sponsors/Supporters
+
+<a href="https://signpath.io" title="SignPath"><img src="signpath-logo.svg" width="200"></a>
+
+**Free code signing on Windows provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org)**
+
+---
 
 [![JetBrains logo.](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSourceSupport) supports this project (and directly dependent projects like [wxSQLite3](https://github.com/utelle/wxsqlite3), [apsw-sqlite3mc](https://github.com/utelle/apsw-sqlite3mc), and [SQLite3MultipleCiphers-NuGet](https://github.com/utelle/SQLite3MultipleCiphers-NuGet)) by providing free [CLion](https://www.jetbrains.com/clion/) licenses. This helps to better maintain the project for different platforms.
 
